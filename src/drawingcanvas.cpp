@@ -20,8 +20,15 @@ void DrawingCanvas::OnPaint(wxPaintEvent &evt)
 
     if (gc)
     {
-        wxPoint rectOrigin = this->FromDIP(wxPoint(189, 200));
         wxSize rectSize = this->FromDIP(wxSize(100, 80));
+        wxPoint rectOrigin = {-rectSize.GetWidth() / 2, -rectSize.GetHeight() / 2};
+
+        wxAffineMatrix2D transform{};
+        transform.Translate(100, 130);
+        transform.Rotate(M_PI / 3.0);
+        transform.Scale(3, 3);
+
+        gc->SetTransform(gc->CreateMatrix(transform));
 
         gc->SetBrush(*wxRED_BRUSH);
         gc->DrawRectangle(rectOrigin.x, rectOrigin.y, rectSize.GetWidth(), rectSize.GetHeight());
