@@ -26,6 +26,9 @@ void DrawingCanvas::OnPaint(wxPaintEvent &evt)
         gc->SetBrush(*wxRED_BRUSH);
         gc->DrawRectangle(rectOrigin.x, rectOrigin.y, rectSize.GetWidth(), rectSize.GetHeight());
 
+        gc->SetFont(*wxNORMAL_FONT, *wxWHITE);
+        gc->DrawText("Text", rectOrigin.x + rectSize.GetWidth() / 2.0, rectOrigin.y + rectSize.GetHeight() / 2.0);
+
         delete gc;
     }
 }
