@@ -8,10 +8,17 @@ DrawingCanvas::DrawingCanvas(wxWindow *parent, wxWindowID id, const wxPoint &pos
     this->SetBackgroundStyle(wxBG_STYLE_PAINT); // needed for windows
 
     this->Bind(wxEVT_PAINT, &DrawingCanvas::OnPaint, this);
+    this->Bind(wxEVT_LEFT_DOWN, &DrawingCanvas::OnMouseDown, this);
+    this->Bind(wxEVT_MOTION, &DrawingCanvas::OnMouseMove, this);
+    this->Bind(wxEVT_LEFT_UP, &DrawingCanvas::OnMouseUp, this);
+    this->Bind(wxEVT_LEAVE_WINDOW, &DrawingCanvas::OnMouseLeave, this);
 
     addRect(this->FromDIP(100), this->FromDIP(80), this->FromDIP(210), this->FromDIP(140), 0, *wxRED, "Rect #1");
     addRect(this->FromDIP(130), this->FromDIP(110), this->FromDIP(280), this->FromDIP(210), M_PI / 3.0, *wxBLUE, "Rect #2");
     addRect(this->FromDIP(110), this->FromDIP(110), this->FromDIP(300), this->FromDIP(120), -M_PI / 4.0, wxColor(255, 0, 255, 128), "Rect #3");
+
+    this->draggedObj = nullptr;
+    this->shouldRotate = false;
 }
 
 void DrawingCanvas::addRect(int width, int height, int centerX, int centerY, double angle, wxColor color, const std::string &text)
@@ -63,4 +70,78 @@ void DrawingCanvas::OnPaint(wxPaintEvent &evt)
 
         delete gc;
     }
+}
+
+void DrawingCanvas::OnMouseDown(wxMouseEvent &event)
+{
+    auto clickedObjectIter = std::find_if(objectArray.rbegin(), objectArray.rend(), [event](const GraphicObject &o)
+                                          {
+                                              wxPoint2DDouble clickPos = event.GetPosition();
+                                              auto inv = o.transform;
+                                              inv.Invert();
+                                              clickPos = inv.TransformPoint(clickPos);
+                                              return o.rect.Contains(clickPos);
+                                          });
+
+    if (clickedObjectIter != objectArray.rend())
+    {
+        auto forwardIt = std::prev(clickedObjectIter.base());
+
+        objectArray.push_back(*forwardIt);
+        objectArray.erase(forwardIt);
+
+        draggedObj = &(*std::prev(objectArray.end()));
+
+        lastDragOrigin = event.GetPosition();
+        shouldRotate = wxGetKeyState(WXK_ALT);
+
+        Refresh(); // for z order reversal
+    }
+}
+
+void DrawingCanvas::OnMouseMove(wxMouseEvent &event)
+{
+    if (draggedObj != nullptr)
+    {
+        if (shouldRotate)
+        {
+            double absoluteYDiff = event.GetPosition().y - lastDragOrigin.m_y;
+            draggedObj->transform.Rotate(absoluteYDiff / 100.0 * M_PI);
+        }
+        else
+        {
+            auto dragVector = event.GetPosition() - lastDragOrigin;
+
+            auto inv = draggedObj->transform;
+            inv.Invert();
+            dragVector = inv.TransformDistance(dragVector);
+
+            draggedObj->transform.Translate(dragVector.m_x, dragVector.m_y);
+        }
+
+        lastDragOrigin = event.GetPosition();
+        Refresh();
+    }
+}
+
+void DrawingCanvas::OnMouseUp(wxMouseEvent &event)
+{
+    finishDrag();
+    finishRotation();
+}
+
+void DrawingCanvas::OnMouseLeave(wxMouseEvent &event)
+{
+    finishDrag();
+    finishRotation();
+}
+
+void DrawingCanvas::finishDrag()
+{
+    draggedObj = nullptr;
+}
+
+void DrawingCanvas::finishRotation()
+{
+    shouldRotate = false;
 }

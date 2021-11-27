@@ -15,6 +15,18 @@ public:
 
 private:
     void OnPaint(wxPaintEvent &evt);
+    void OnMouseDown(wxMouseEvent &event);
+    void OnMouseMove(wxMouseEvent &event);
+    void OnMouseUp(wxMouseEvent &event);
+    void OnMouseLeave(wxMouseEvent &event);
+
+    void finishDrag();
+    void finishRotation();
 
     std::list<GraphicObject> objectArray;
+
+    GraphicObject *draggedObj;
+    bool shouldRotate;
+
+    wxPoint2DDouble lastDragOrigin;
 };
