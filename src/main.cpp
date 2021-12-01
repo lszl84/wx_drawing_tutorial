@@ -45,6 +45,7 @@ MyFrame::MyFrame(const wxString &title, const wxPoint &pos, const wxSize &size)
     wxSizer *sizer = new wxBoxSizer(wxVERTICAL);
 
     chart = new ChartControl(this, wxID_ANY, wxDefaultPosition, this->FromDIP(wxSize(640, 480)));
+    chart->title = "Important Chart";
 
     sizer->Add(chart, 1, wxEXPAND | wxALL, 0);
 
