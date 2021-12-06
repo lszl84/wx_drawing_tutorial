@@ -40,9 +40,6 @@ void ChartControl::OnPaint(wxPaintEvent &evt)
 
         gc->DrawText(this->title, (fullArea.GetSize().GetWidth() - tw) / 2.0, (marginTop - th) / 2.0);
 
-        gc->SetBrush(*wxRED_BRUSH);
-        gc->DrawRectangle(chartArea.m_x, chartArea.m_y, chartArea.m_width, chartArea.m_height);
-
         wxAffineMatrix2D normalizedToChartArea{};
         normalizedToChartArea.Translate(chartArea.GetLeft(), chartArea.GetTop());
         normalizedToChartArea.Scale(chartArea.m_width, chartArea.m_height);
@@ -61,6 +58,17 @@ void ChartControl::OnPaint(wxPaintEvent &evt)
             wxPoint2DDouble linePoints[] = {lineStartPoint, lineEndPoint};
             gc->StrokeLines(2, linePoints);
         }
+
+        wxPoint2DDouble leftHLinePoints[] = {
+            normalizedToChartArea.TransformPoint({0, 0}),
+            normalizedToChartArea.TransformPoint({0, 1})};
+
+        wxPoint2DDouble rightHLinePoints[] = {
+            normalizedToChartArea.TransformPoint({1, 0}),
+            normalizedToChartArea.TransformPoint({1, 1})};
+
+        gc->StrokeLines(2, leftHLinePoints);
+        gc->StrokeLines(2, rightHLinePoints);
 
         delete gc;
     }
