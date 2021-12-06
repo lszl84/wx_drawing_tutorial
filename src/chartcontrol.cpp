@@ -43,6 +43,25 @@ void ChartControl::OnPaint(wxPaintEvent &evt)
         gc->SetBrush(*wxRED_BRUSH);
         gc->DrawRectangle(chartArea.m_x, chartArea.m_y, chartArea.m_width, chartArea.m_height);
 
+        wxAffineMatrix2D normalizedToChartArea{};
+        normalizedToChartArea.Translate(chartArea.GetLeft(), chartArea.GetTop());
+        normalizedToChartArea.Scale(chartArea.m_width, chartArea.m_height);
+
+        const int yLinesCount = 11;
+
+        gc->SetPen(wxPen(wxColor(128, 128, 128)));
+
+        for (int i = 0; i < yLinesCount; i++)
+        {
+            double normalizedLineY = static_cast<double>(i) / (yLinesCount - 1);
+
+            auto lineStartPoint = normalizedToChartArea.TransformPoint({0, normalizedLineY});
+            auto lineEndPoint = normalizedToChartArea.TransformPoint({1, normalizedLineY});
+
+            wxPoint2DDouble linePoints[] = {lineStartPoint, lineEndPoint};
+            gc->StrokeLines(2, linePoints);
+        }
+
         delete gc;
     }
 }
