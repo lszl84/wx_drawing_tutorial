@@ -14,4 +14,5 @@ public:
 
 private:
     void OnPaint(wxPaintEvent &evt);
+    std::tuple<int, double, double> calculateChartSegmentCountAndRange(double origLow, double origHigh);
 };

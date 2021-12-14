@@ -47,14 +47,19 @@ void ChartControl::OnPaint(wxPaintEvent &evt)
 
         double lowValue = *std::min_element(values.begin(), values.end());
         double highValue = *std::max_element(values.begin(), values.end());
-        double yValueSpan = highValue - lowValue;
+
+        const auto &[segmentCount, rangeLow, rangeHigh] = calculateChartSegmentCountAndRange(lowValue, highValue);
+
+        double yValueSpan = rangeHigh - rangeLow;
+        lowValue = rangeLow;
+        highValue = rangeHigh;
+
+        double yLinesCount = segmentCount + 1;
 
         wxAffineMatrix2D normalizedToValue{};
         normalizedToValue.Translate(0, highValue);
         normalizedToValue.Scale(1, -1);
         normalizedToValue.Scale(static_cast<double>(values.size() - 1), yValueSpan);
-
-        const int yLinesCount = 11;
 
         gc->SetPen(wxPen(wxColor(128, 128, 128)));
         gc->SetFont(*wxNORMAL_FONT, wxSystemSettings::GetAppearance().IsDark() ? *wxWHITE : *wxBLACK);
@@ -108,4 +113,29 @@ void ChartControl::OnPaint(wxPaintEvent &evt)
         delete[] pointArray;
         delete gc;
     }
+}
+
+std::tuple<int, double, double> ChartControl::calculateChartSegmentCountAndRange(double origLow, double origHigh)
+{
+    constexpr double rangeMults[] = {0.2, 0.25, 0.5, 1.0, 2.0, 2.5, 5.0};
+    constexpr int maxSegments = 6;
+
+    double magnitude = std::floor(std::log10(origHigh - origLow));
+
+    for (auto r : rangeMults)
+    {
+        double stepSize = r * std::pow(10.0, magnitude);
+        double low = std::floor(origLow / stepSize) * stepSize;
+        double high = std::ceil(origHigh / stepSize) * stepSize;
+
+        int segments = round((high - low) / stepSize);
+
+        if (segments <= maxSegments)
+        {
+            return std::make_tuple(segments, low, high);
+        }
+    }
+
+    // return some defaults in case rangeMults and maxSegments are mismatched
+    return std::make_tuple(10, origLow, origHigh);
 }
