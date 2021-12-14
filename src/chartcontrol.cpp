@@ -90,6 +90,22 @@ void ChartControl::OnPaint(wxPaintEvent &evt)
         gc->StrokeLines(2, leftHLinePoints);
         gc->StrokeLines(2, rightHLinePoints);
 
+        wxPoint2DDouble *pointArray = new wxPoint2DDouble[values.size()];
+
+        wxAffineMatrix2D valueToNormalized = normalizedToValue;
+        valueToNormalized.Invert();
+        wxAffineMatrix2D valueToChartArea = normalizedToChartArea;
+        valueToChartArea.Concat(valueToNormalized);
+
+        for (int i = 0; i < values.size(); i++)
+        {
+            pointArray[i] = valueToChartArea.TransformPoint({static_cast<double>(i), values[i]});
+        }
+
+        gc->SetPen(wxPen(wxSystemSettings::GetAppearance().IsDark() ? *wxCYAN : *wxBLUE, 3));
+        gc->StrokeLines(values.size(), pointArray);
+
+        delete[] pointArray;
         delete gc;
     }
 }
