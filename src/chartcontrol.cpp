@@ -17,7 +17,7 @@ void ChartControl::OnPaint(wxPaintEvent &evt)
     dc.Clear();
     wxGraphicsContext *gc = wxGraphicsContext::Create(dc);
 
-    if (gc)
+    if (gc && values.size() > 0)
     {
         wxFont titleFont = wxFont(wxNORMAL_FONT->GetPointSize() * 2.0,
                                   wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD);
@@ -34,6 +34,7 @@ void ChartControl::OnPaint(wxPaintEvent &evt)
         const double marginX = fullArea.GetSize().GetWidth() / 8.0;
         const double marginTop = std::max(fullArea.GetSize().GetHeight() / 8.0, titleTopBottomMinimumMargin * 2.0 + th);
         const double marginBottom = fullArea.GetSize().GetHeight() / 8.0;
+        double labelsToChartAreaMargin = this->FromDIP(10);
 
         wxRect2DDouble chartArea = fullArea;
         chartArea.Inset(marginX, marginTop, marginX, marginBottom);
@@ -44,9 +45,19 @@ void ChartControl::OnPaint(wxPaintEvent &evt)
         normalizedToChartArea.Translate(chartArea.GetLeft(), chartArea.GetTop());
         normalizedToChartArea.Scale(chartArea.m_width, chartArea.m_height);
 
+        double lowValue = *std::min_element(values.begin(), values.end());
+        double highValue = *std::max_element(values.begin(), values.end());
+        double yValueSpan = highValue - lowValue;
+
+        wxAffineMatrix2D normalizedToValue{};
+        normalizedToValue.Translate(0, highValue);
+        normalizedToValue.Scale(1, -1);
+        normalizedToValue.Scale(static_cast<double>(values.size() - 1), yValueSpan);
+
         const int yLinesCount = 11;
 
         gc->SetPen(wxPen(wxColor(128, 128, 128)));
+        gc->SetFont(*wxNORMAL_FONT, wxSystemSettings::GetAppearance().IsDark() ? *wxWHITE : *wxBLACK);
 
         for (int i = 0; i < yLinesCount; i++)
         {
@@ -57,6 +68,15 @@ void ChartControl::OnPaint(wxPaintEvent &evt)
 
             wxPoint2DDouble linePoints[] = {lineStartPoint, lineEndPoint};
             gc->StrokeLines(2, linePoints);
+
+            double valueAtLineY = normalizedToValue.TransformPoint({0, normalizedLineY}).m_y;
+
+            auto text = wxString::Format("%.2f", valueAtLineY);
+            text = wxControl::Ellipsize(text, dc, wxELLIPSIZE_MIDDLE, chartArea.GetLeft() - labelsToChartAreaMargin);
+
+            double tw, th;
+            gc->GetTextExtent(text, &tw, &th);
+            gc->DrawText(text, chartArea.GetLeft() - labelsToChartAreaMargin - tw, lineStartPoint.m_y - th / 2.0);
         }
 
         wxPoint2DDouble leftHLinePoints[] = {
