@@ -8,6 +8,32 @@ DrawingCanvas::DrawingCanvas(wxWindow *parent, wxWindowID id, const wxPoint &pos
     this->SetBackgroundStyle(wxBG_STYLE_PAINT); // needed for windows
 
     this->Bind(wxEVT_PAINT, &DrawingCanvas::OnPaint, this);
+
+    addRect(this->FromDIP(100), this->FromDIP(80), this->FromDIP(210), this->FromDIP(140), 0, *wxRED, "Rect #1");
+    addRect(this->FromDIP(130), this->FromDIP(110), this->FromDIP(280), this->FromDIP(210), M_PI / 3.0, *wxBLUE, "Rect #2");
+    addRect(this->FromDIP(110), this->FromDIP(110), this->FromDIP(300), this->FromDIP(120), -M_PI / 4.0, wxColor(255, 0, 255, 128), "Rect #3");
+}
+
+void DrawingCanvas::addRect(int width, int height, int centerX, int centerY, double angle, wxColor color, const std::string &text)
+{
+    GraphicObject obj{
+        {-width / 2.0,
+         -height / 2.0,
+         static_cast<double>(width),
+         static_cast<double>(height)},
+        color,
+        text,
+        {}};
+
+    obj.transform.Translate(
+        static_cast<double>(centerX),
+        static_cast<double>(centerY));
+
+    obj.transform.Rotate(angle);
+
+    this->objectArray.push_back(obj);
+
+    Refresh();
 }
 
 void DrawingCanvas::OnPaint(wxPaintEvent &evt)
@@ -20,26 +46,20 @@ void DrawingCanvas::OnPaint(wxPaintEvent &evt)
 
     if (gc)
     {
-        wxSize rectSize = this->FromDIP(wxSize(100, 80));
-        wxPoint rectOrigin = {-rectSize.GetWidth() / 2, -rectSize.GetHeight() / 2};
+        for (const auto &object : objectArray)
+        {
+            gc->SetTransform(gc->CreateMatrix(object.transform));
 
-        wxAffineMatrix2D transform{};
-        transform.Translate(100, 130);
-        transform.Rotate(M_PI / 3.0);
-        transform.Scale(3, 3);
+            gc->SetBrush(wxBrush(object.color));
+            gc->DrawRectangle(object.rect.m_x, object.rect.m_y, object.rect.m_width, object.rect.m_height);
 
-        gc->SetTransform(gc->CreateMatrix(transform));
+            gc->SetFont(*wxNORMAL_FONT, *wxWHITE);
 
-        gc->SetBrush(*wxRED_BRUSH);
-        gc->DrawRectangle(rectOrigin.x, rectOrigin.y, rectSize.GetWidth(), rectSize.GetHeight());
+            double textWidth, textHeight;
+            gc->GetTextExtent(object.text, &textWidth, &textHeight);
 
-        gc->SetFont(*wxNORMAL_FONT, *wxWHITE);
-        wxString text = "Text";
-
-        double textWidth, textHeight;
-        gc->GetTextExtent(text, &textWidth, &textHeight);
-
-        gc->DrawText(text, rectOrigin.x + rectSize.GetWidth() / 2.0 - textWidth / 2.0, rectOrigin.y + rectSize.GetHeight() / 2.0 - textHeight / 2.0);
+            gc->DrawText(object.text, object.rect.m_x + object.rect.m_width / 2.0 - textWidth / 2.0, object.rect.m_y + object.rect.m_height / 2.0 - textHeight / 2.0);
+        }
 
         delete gc;
     }
