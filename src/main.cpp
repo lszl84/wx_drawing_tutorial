@@ -58,6 +58,8 @@ MyFrame::MyFrame(const wxString &title, const wxPoint &pos, const wxSize &size)
     canvas->Bind(CANVAS_RECT_ADDED, &MyFrame::OnRectAdded, this);
     canvas->Bind(CANVAS_RECT_REMOVED, &MyFrame::OnRectRemoved, this);
 
+    rectCount = canvas->getObjectCount();
+
     sizer->Add(buttonPanel, 0, wxEXPAND | wxALL, 0);
     sizer->Add(canvas, 1, wxEXPAND | wxALL, 0);
 
