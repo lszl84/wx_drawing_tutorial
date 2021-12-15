@@ -3,6 +3,9 @@
 #include <wx/dcbuffer.h>
 #include <iostream>
 
+wxDEFINE_EVENT(CANVAS_RECT_ADDED, wxCommandEvent);
+wxDEFINE_EVENT(CANVAS_RECT_REMOVED, wxCommandEvent);
+
 DrawingCanvas::DrawingCanvas(wxWindow *parent, wxWindowID id, const wxPoint &pos, const wxSize &size) : wxWindow(parent, id, pos, size)
 {
     this->SetBackgroundStyle(wxBG_STYLE_PAINT); // needed for windows
@@ -38,9 +41,22 @@ void DrawingCanvas::addRect(int width, int height, int centerX, int centerY, dou
 
     obj.transform.Rotate(angle);
 
-    this->objectArray.push_back(obj);
+    this->objectList.push_back(obj);
 
+    sendRectAddedEvent(text);
     Refresh();
+}
+
+void DrawingCanvas::removeTopRect()
+{
+    if (!this->objectList.empty() && draggedObj == nullptr)
+    {
+        auto text = this->objectList.back().text;
+        this->objectList.pop_back();
+
+        sendRectRemovedEvent(text);
+        Refresh();
+    }
 }
 
 void DrawingCanvas::OnPaint(wxPaintEvent &evt)
@@ -53,7 +69,7 @@ void DrawingCanvas::OnPaint(wxPaintEvent &evt)
 
     if (gc)
     {
-        for (const auto &object : objectArray)
+        for (const auto &object : objectList)
         {
             gc->SetTransform(gc->CreateMatrix(object.transform));
 
@@ -74,7 +90,7 @@ void DrawingCanvas::OnPaint(wxPaintEvent &evt)
 
 void DrawingCanvas::OnMouseDown(wxMouseEvent &event)
 {
-    auto clickedObjectIter = std::find_if(objectArray.rbegin(), objectArray.rend(), [event](const GraphicObject &o)
+    auto clickedObjectIter = std::find_if(objectList.rbegin(), objectList.rend(), [event](const GraphicObject &o)
                                           {
                                               wxPoint2DDouble clickPos = event.GetPosition();
                                               auto inv = o.transform;
@@ -83,14 +99,14 @@ void DrawingCanvas::OnMouseDown(wxMouseEvent &event)
                                               return o.rect.Contains(clickPos);
                                           });
 
-    if (clickedObjectIter != objectArray.rend())
+    if (clickedObjectIter != objectList.rend())
     {
         auto forwardIt = std::prev(clickedObjectIter.base());
 
-        objectArray.push_back(*forwardIt);
-        objectArray.erase(forwardIt);
+        objectList.push_back(*forwardIt);
+        objectList.erase(forwardIt);
 
-        draggedObj = &(*std::prev(objectArray.end()));
+        draggedObj = &(*std::prev(objectList.end()));
 
         lastDragOrigin = event.GetPosition();
         shouldRotate = wxGetKeyState(WXK_ALT);
@@ -144,4 +160,22 @@ void DrawingCanvas::finishDrag()
 void DrawingCanvas::finishRotation()
 {
     shouldRotate = false;
+}
+
+void DrawingCanvas::sendRectAddedEvent(const wxString &rectTitle)
+{
+    wxCommandEvent event(CANVAS_RECT_ADDED, GetId());
+    event.SetEventObject(this);
+    event.SetString(rectTitle);
+
+    ProcessWindowEvent(event);
+}
+
+void DrawingCanvas::sendRectRemovedEvent(const wxString &rectTitle)
+{
+    wxCommandEvent event(CANVAS_RECT_REMOVED, GetId());
+    event.SetEventObject(this);
+    event.SetString(rectTitle);
+
+    ProcessWindowEvent(event);
 }
