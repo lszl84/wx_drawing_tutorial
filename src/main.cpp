@@ -2,6 +2,7 @@
 
 #include <random>
 #include "drawingcanvas.h"
+#include "chartcontrol.h"
 
 class MyApp : public wxApp
 {
@@ -23,6 +24,7 @@ private:
     wxPanel *createButtonPanel(wxWindow *parent);
 
     DrawingCanvas *canvas;
+    ChartControl *chart;
 
     int rectCount = 0;
     std::mt19937 randomGen;
@@ -42,16 +44,9 @@ MyFrame::MyFrame(const wxString &title, const wxPoint &pos, const wxSize &size)
 {
     wxSizer *sizer = new wxBoxSizer(wxVERTICAL);
 
-    auto buttonPanel = createButtonPanel(this);
+    chart = new ChartControl(this, wxID_ANY, wxDefaultPosition, this->FromDIP(wxSize(640, 480)));
 
-    canvas = new DrawingCanvas(this, wxID_ANY, wxDefaultPosition, this->FromDIP(wxSize(640, 480)));
-    canvas->Bind(CANVAS_RECT_ADDED, &MyFrame::OnRectAdded, this);
-    canvas->Bind(CANVAS_RECT_REMOVED, &MyFrame::OnRectRemoved, this);
-
-    rectCount = canvas->getObjectCount();
-
-    sizer->Add(canvas, 1, wxEXPAND | wxALL, 0);
-    sizer->Add(buttonPanel, 0, wxEXPAND | wxALL, 0);
+    sizer->Add(chart, 1, wxEXPAND | wxALL, 0);
 
     this->SetSizerAndFit(sizer);
 
