@@ -22,3 +22,5 @@ But if CMake script finds wxWidgets on your system, make sure it's at least vers
 ---
 Check out the blog for more! [www.onlyfastcode.com](https://www.onlyfastcode.com)
 ---
+
+📚 More C++ and wxWidgets tutorials: [devmindscape.com](https://devmindscape.com) · 💼 Available for contract work: [devmindscape.com/work](https://devmindscape.com/work/)
